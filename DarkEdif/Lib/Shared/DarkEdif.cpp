@@ -2853,16 +2853,19 @@ HGLOBAL DarkEdif::DLL::DLL_UpdateEditStructure(mv* mV, EDITDATA* oldEdPtr)
 	long oldOffset = oldEdPtr ? (long)oldEdPtr->eHeader.extPrivateData : 0L;
 	const long newOffset = offsetof(EDITDATA, Props);
 
-	const static int PROPID_ITEM_NAME = 21; // user-defined object taken from a Props.h file
-	Prop_Str* ps = (Prop_Str*)(oldEdPtr ? mvGetPropValue(mV, oldEdPtr, PROPID_ITEM_NAME) : NULL);
+	// Read user-defined object name
+	const static int PROPID_EXTITEM_NAME = 403; // taken from a Props.h file
+	Prop_Str* ps = (Prop_Str*)(oldEdPtr ? mvGetPropValue(mV, oldEdPtr, PROPID_EXTITEM_NAME) : NULL);
 	std::tstring objName = ExtensionName;
 	if (ps != nullptr)
 	{
-		objName = ps->String;
-		if (objName != ExtensionName && objName[0] != _T('\0'))
-			objName += _T(" (") + ExtensionName + _T(")");
+		if (ps->String && ps->String[0] && ps->String != ExtensionName)
+			objName = std::tstring(ps->String) + _T(" (") + ExtensionName + _T(")");
 		ps->Delete();
 	}
+	// For use in later popup messages, instead of doing "SDL Object object properties", makes it "SDL Object properties", or "DarkScript object properties"
+	if (!EndsWith(objName, _T("object"sv)))
+		objName += _T(" object"sv);
 
 	// Reading pre-smart failed. Only feasible option is to reset.
 	// MsgBox::Info("Resetting properties", "Warning: Forced to reset properties for object \"%s\" (%s), "
@@ -3206,8 +3209,9 @@ HGLOBAL DarkEdif::DLL::DLL_UpdateEditStructure(mv* mV, EDITDATA* oldEdPtr)
 			}
 
 			// mv->EditApp contents is opaque, but the pointer changes when a new MFA is loaded
-			// We run a popup only if this is the first time we're seeing this CEditApp address
-			bool isDiffApp = lastCEditApp != mV->EditApp;
+			// We run a popup only if this is the first time we're seeing this CEditApp address,
+			// to prevent a popup for every Fusion frame that has the object inside
+			const bool isDiffApp = lastCEditApp != mV->EditApp;
 			lastCEditApp = mV->EditApp;
 
 			// Set to do popup, and if once only, this is a new app and eligible for its one popup
@@ -3218,18 +3222,20 @@ HGLOBAL DarkEdif::DLL::DLL_UpdateEditStructure(mv* mV, EDITDATA* oldEdPtr)
 				{
 					if (upgradeBoxNoOnce != "for reset only"sv)
 					{
-						MsgBox::Info(_T("Upgraded properties"), _T("Successfully upgraded all %u of %s object properties from ext version %lu to version %i."),
+						MsgBox::Info(_T("Upgraded properties"), _T("Successfully upgraded all %u of %s %s from ext version %lu to version %i."),
 							convState.jsonProps.u.array.length, objName.c_str(), oldExtVersion, Extension::Version);
 					}
 				}
 				else
 				{
 					resetPropStr.resize(resetPropStr.size() - 1U); // remove last line's ending newline
-					MsgBox::Info(_T("Upgraded properties"), _T("Successfully copied %u of %s object properties from ext version %lu to %i.%s\n\nAlso set %zu %s to their default settings, namely:\n%s"),
+					const bool isOne = convState.numPropsReset == 1;
+					MsgBox::Info(_T("Upgraded properties"), _T("Successfully copied %u of %s properties from ext version %lu to %i.%s\n\nAlso set %zu %s to their default setting%s:\n%s"),
 						convState.jsonProps.u.array.length - convState.numPropsReset, objName.c_str(),
 						oldExtVersion, Extension::Version,
 						propVersionUpgrade.c_str(),
-						convState.numPropsReset, convState.numPropsReset == 1 ? _T("property") : _T("properties"), UTF8ToTString(resetPropStr).c_str());
+						convState.numPropsReset, isOne == 1 ? _T("property") : _T("properties"), isOne ? _T("s") : _T(""),
+						UTF8ToTString(resetPropStr).c_str());
 				}
 			}
 		}
