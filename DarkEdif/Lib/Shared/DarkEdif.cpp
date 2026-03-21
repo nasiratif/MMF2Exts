@@ -3314,7 +3314,13 @@ ReadyToOutput:
 			expSize -= sizeof(EDITDATA::font);
 #endif
 
-		// No custom dev data between eHeader and Props, just font/objSize, and layout is what we expect
+		// No custom dev data between eHeader and Props, just font/objSize, and layout is what we expect considering OEFLAGS.
+		// expSize 0 here means we can auto-migrate stuff between eHeader and Props of old edptr to new edptr.
+		// Note an exact old-new offset match means all data between could be memcpy'd, but that's reckless;
+		// build 1 could have had 4 ints, build 2 have 8 shorts, etc; best to let ext dev migrate with MigrateMiddle.
+		// Note offsets will be 0 here if non-smart prop oldEdPtr, and 20 (sizeof eheader) if there is no in-between data at all,
+		// old or new props. OEFLAGS should not change between ext versions, as Fusion does not expect it,
+		// and won't have the reserved space that the properties need. I'm unsure if that will corrupt MFAs.
 		if (oldOffset == newOffset && expSize == 0)
 		{
 			(void)0;
@@ -3325,6 +3331,11 @@ ReadyToOutput:
 			memcpy(&newEdPtr->font, &oldEdPtr->font, sizeof(EDITDATA::font));
 #endif
 		}
+		// oldEdPtr non-null + oldOffset 0 means old edptr is non-smart props, and new offset has nothing between eHeader/Props,
+		// no migrate needed. Note MigrateMiddle is called when non-smart old edptr, even when it's just auto-migrateable
+		// size and/or font, so the user can init those to their own preferences.
+		else if (oldOffset == 0 && newOffset == sizeof(EDITDATA::eHeader))
+			DebugProp_OutputString(_T("Migration unnecessary between non-smart props edPtr and new edPtr."));
 		else
 		{
 			// If any custom data is present, then we must migrate it by calling MigrateMiddle
