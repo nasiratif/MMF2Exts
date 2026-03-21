@@ -245,7 +245,7 @@
 		<!-- This define is set by Extension::OEFLAGS in Extension.hpp -->
 		<_DarkEdif_GetOEFLAGListRegex><![CDATA[(?m)^\s*[A-Za-z0-9_\s]+?OEFLAGS\s+OEFLAGS\s*=\s*([^;]*);]]></_DarkEdif_GetOEFLAGListRegex>
 		<_DarkEdif_OEFLAGList>Fake</_DarkEdif_OEFLAGList>
-		<_DarkEdif_OEFLAGList Condition="'$(SDKType)'=='DarkEdif'">$([System.Text.RegularExpressions.Regex]::Match($(_ExtH), $(_DarkEdif_GetOEFLAGListRegex)).Result('$1')).Replace('OEFLAGS::', '')</_DarkEdif_OEFLAGList>
+		<_DarkEdif_OEFLAGList Condition="'$(SDKType)'=='DarkEdif'">$([System.Text.RegularExpressions.Regex]::Match($(_ExtH), $(_DarkEdif_GetOEFLAGListRegex)).Result('$1').Replace('OEFLAGS::', ''))</_DarkEdif_OEFLAGList>
 		<!-- This define is true if OEFLAGS contains TEXT -->
 		<DarkEdif_OEFLAGTextPresent Condition="'$(SDKType)'=='DarkEdif' AND $(_DarkEdif_OEFLAGList.Contains('TEXT'))">1</DarkEdif_OEFLAGTextPresent>
 		<!-- This define is true if OEFLAGS contains WINDOW_PROC -->
