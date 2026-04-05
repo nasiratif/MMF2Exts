@@ -176,4 +176,18 @@ extern "C"
 // These have not been fleshed out in DarkEdif.
 #include <d3d8.h>
 #endif
+#ifdef FUSION_DDRAW_INTERNALS
+// The IIDs aren't correctly defined for some reason
+#if defined(FUSION_INCLUDE_ATL) && !defined(INITGUID)
+#include <initguid.h>
+#endif // GUID defines
+
+// Fusion invokes DirectDraw (DirectX) v1-2. The backend can be v7, but Fusion doesn't directly use the advanced features.
+// In theory, there's not much performance hit as what Fusion requests doesn't implicitly require slower methods.
+// You should consider DirectDraw only partially implemented on Fusion's part.
+// Note that no created surface will have DDraw features from tests. Only the frame surface itself.
+// DirectX / DirectX + VRAM modes were later removed in CF2.5.
+#include <ddraw.h>
+#endif // FUSION_DDRAW_INTERNALS
+
 #endif
